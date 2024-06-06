@@ -1,4 +1,3 @@
--- Create the users table
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -6,21 +5,18 @@ CREATE TABLE users (
     user_type ENUM('user', 'admin') DEFAULT 'user'
 );
 
--- Create the laws table
 CREATE TABLE laws (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL
 );
 
--- Create the maps table
 CREATE TABLE maps (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     filename VARCHAR(255) NOT NULL
 );
 
--- Create the detected_objects table
 CREATE TABLE detected_objects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     map_id INT,
@@ -34,7 +30,6 @@ CREATE TABLE detected_objects (
     FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE CASCADE
 );
 
--- Create the areas table
 CREATE TABLE areas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -46,7 +41,6 @@ CREATE TABLE areas (
     FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE CASCADE
 );
 
--- Create the area_features table
 CREATE TABLE area_features (
     id INT AUTO_INCREMENT PRIMARY KEY,
     area_id INT,
@@ -55,7 +49,6 @@ CREATE TABLE area_features (
     FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
 );
 
--- Create the prompts table
 CREATE TABLE prompts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -66,6 +59,3 @@ CREATE TABLE prompts (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (map_id) REFERENCES maps(id)
 );
-
-
-
