@@ -57,7 +57,7 @@
     });
 
     map.addEventListener('mousemove', function(e) {
-        if (e.buttons !== 1) return;  // Only proceed if the mouse is being pressed
+        if (e.buttons !== 1) return;  
         endX = e.offsetX;
         endY = e.offsetY;
         selection.style.width = Math.abs(endX - startX) + 'px';
