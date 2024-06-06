@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}View Map - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>{{ map_info.name }}</h1>
+<div id="map" style="background: url('{{ url_for('uploaded_file', filename=map_info.filename) }}') no-repeat center center; background-size: contain; width: 100%; height: 500px; position: relative; border: 1px solid #ccc;">
+    {% for area in areas %}
+        <div class="selection" style="left: {{ area.x1 }}px; top: {{ area.y1 }}px; width: {{ area.x2 - area.x1 }}px; height: {{ area.y2 - area.y1 }}px; position: absolute; border: 2px dashed #FF0000;"></div>
+    {% endfor %}
+</div>
+<h2 class="mt-4">Areas</h2>
+<ul class="list-group">
+    {% for area in areas %}
+        <li class="list-group-item">
+            <h4>{{ area.name }}</h4>
+            <div class="area-details">
+                {% for feature in area.features %}
+                    <p>{{ feature.feature_type }}: {{ feature.feature_value }}</p>
+                {% endfor %}
+            </div>
+        </li>
+    {% endfor %}
+</ul>
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+{% endblock %}

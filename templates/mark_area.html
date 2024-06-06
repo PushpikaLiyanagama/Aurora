@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Area - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>Mark Area</h1>
+<div id="map" style="background: url('{{ url_for('uploaded_file', filename=map_info.filename) }}') no-repeat center center; background-size: contain; width: 100%; height: 500px; position: relative; border: 1px solid #ccc;"></div>
+<form method="POST" class="mt-3">
+    <input type="hidden" id="x1" name="x1">
+    <input type="hidden" id="y1" name="y1">
+    <input type="hidden" id="x2" name="x2">
+    <input type="hidden" id="y2" name="y2">
+    <div class="form-group">
+        <label for="area_name">Area Name:</label>
+        <input type="text" class="form-control" id="area_name" name="area_name" required>
+    </div>
+    <div class="form-group">
+        <label for="feature_type">Feature Type:</label>
+        <select id="feature_type" name="feature_type" class="form-control">
+            <option value="electricity">Electricity</option>
+            <option value="water_supply">Water Supply</option>
+            <option value="air_quality">Air Quality</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="feature_value">Feature Value:</label>
+        <select id="feature_value" name="feature_value" class="form-control">
+            <option value="perfect">Perfect</option>
+            <option value="medium">Medium</option>
+            <option value="law">Law</option>
+        </select>
+    </div>
+
+    <!--<div class="form-group">
+        <label for="feature_value">Feature Value:</label>
+        <input type="text" class="form-control" id="feature_value" name="feature_value" required>
+    </div>-->
+    <button type="submit" class="btn btn-primary">Mark Area</button>
+</form>
+
+<script>
+    var map = document.getElementById('map');
+    var selection = document.createElement('div');
+    selection.className = 'selection';
+    map.appendChild(selection);
+    var startX, startY, endX, endY;
+
+    map.addEventListener('mousedown', function(e) {
+        startX = e.offsetX;
+        startY = e.offsetY;
+        selection.style.left = startX + 'px';
+        selection.style.top = startY + 'px';
+        selection.style.width = 0;
+        selection.style.height = 0;
+        selection.style.display = 'block';
+    });
+
+    map.addEventListener('mousemove', function(e) {
+        if (e.buttons !== 1) return;  // Only proceed if the mouse is being pressed
+        endX = e.offsetX;
+        endY = e.offsetY;
+        selection.style.width = Math.abs(endX - startX) + 'px';
+        selection.style.height = Math.abs(endY - startY) + 'px';
+        selection.style.left = Math.min(startX, endX) + 'px';
+        selection.style.top = Math.min(startY, endY) + 'px';
+    });
+
+    map.addEventListener('mouseup', function(e) {
+        endX = e.offsetX;
+        endY = e.offsetY;
+        document.getElementById('x1').value = Math.min(startX, endX);
+        document.getElementById('y1').value = Math.min(startY, endY);
+        document.getElementById('x2').value = Math.max(startX, endX);
+        document.getElementById('y2').value = Math.max(startY, endY);
+    });
+</script>
+<style>
+    .selection {
+        position: absolute;
+        border: 2px dashed #FF0000;
+        background-color: rgba(0, 0, 0, 0.2);
+        display: none;
+    }
+</style>
+
+{% endblock %}
+

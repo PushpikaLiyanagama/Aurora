@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}View Prompts - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>View Prompts</h1>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Building Type</th>
+            <th>Subcategory</th>
+            <th>Prompt</th>
+            <th>Generate Image</th>
+            <th>View Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for prompt in prompts %}
+        <tr>
+            <td>{{ prompt.building_type }}</td>
+            <td>{{ prompt.subcategory }}</td>
+            <td>{{ prompt.prompt }}</td>
+            <td><a href="{{ url_for('generate_image_route', prompt_id=prompt.id) }}" class="btn btn-primary">Create</a></td>
+            <td>
+                {% if prompt.generated_image %}
+                <a href="{{ url_for('view_generated_image', image_filename=prompt.generated_image) }}" class="btn btn-secondary">View</a>
+                {% else %}
+                N/A
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

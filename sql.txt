@@ -1,0 +1,71 @@
+-- Create the users table
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    user_type ENUM('user', 'admin') DEFAULT 'user'
+);
+
+-- Create the laws table
+CREATE TABLE laws (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL
+);
+
+-- Create the maps table
+CREATE TABLE maps (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    filename VARCHAR(255) NOT NULL
+);
+
+-- Create the detected_objects table
+CREATE TABLE detected_objects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    map_id INT,
+    class_name VARCHAR(255) NOT NULL,
+    mask TEXT NOT NULL,
+    x1 INT NOT NULL,
+    y1 INT NOT NULL,
+    x2 INT NOT NULL,
+    y2 INT NOT NULL,
+    area FLOAT NOT NULL,
+    FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE CASCADE
+);
+
+-- Create the areas table
+CREATE TABLE areas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    map_id INT,
+    x1 INT NOT NULL,
+    y1 INT NOT NULL,
+    x2 INT NOT NULL,
+    y2 INT NOT NULL,
+    FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE CASCADE
+);
+
+-- Create the area_features table
+CREATE TABLE area_features (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    area_id INT,
+    feature_type VARCHAR(255) NOT NULL,
+    feature_value VARCHAR(255) NOT NULL,
+    FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
+);
+
+-- Create the prompts table
+CREATE TABLE prompts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    map_id INT,
+    building_type VARCHAR(255) NOT NULL,
+    subcategory VARCHAR(255) NOT NULL,
+    prompt TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (map_id) REFERENCES maps(id)
+);
+
+
+

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Select Building Type{% endblock %}
+
+{% block content %}
+<h1>Select Building Type</h1>
+<form method="POST">
+    <div class="form-group">
+        <label for="building_type">Building Type:</label>
+        <select id="building_type" name="building_type" class="form-control" required>
+            <option value="Residential">Residential buildings</option>
+            <option value="Commercial">Commercial buildings</option>
+            <option value="Industrial">Industrial buildings</option>
+            <option value="Transport">Transport-related buildings</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Next</button>
+</form>
+{% endblock %}

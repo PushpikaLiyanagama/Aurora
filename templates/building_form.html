@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Building Form - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>Building Form</h1>
+<form method="POST">
+    <input type="hidden" name="x1" value="{{ request.args.get('x1') }}">
+    <input type="hidden" name="y1" value="{{ request.args.get('y1') }}">
+    <input type="hidden" name="x2" value="{{ request.args.get('x2') }}">
+    <input type="hidden" name="y2" value="{{ request.args.get('y2') }}">
+    <div class="form-group">
+        <label for="building_type">Building Type:</label>
+        <select id="building_type" name="building_type" class="form-control" required>
+            <option value="Residential">Residential buildings</option>
+            <option value="Commercial">Commercial buildings</option>
+            <option value="Industrial">Industrial buildings</option>
+            <option value="Transport">Transport Related</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="subcategory">Subcategory:</label>
+        <select id="subcategory" name="subcategory" class="form-control" required>
+            <!-- Options will be dynamically populated based on building type selection -->
+        </select>
+    </div>
+    <div id="dynamic_fields"></div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<script>
+    const subcategoryOptions = {
+        "Residential": {
+            "Single Family House": [
+                { label: "Number of bedrooms", type: "number", name: "bedrooms", min: 1, max: 10 },
+                { label: "Number of Bathrooms", type: "number", name: "bathrooms", min: 1, max: 10 },
+                { label: "Numbers of floors", type: "number", name: "floors", min: 1, max: 10 },
+                { label: "Home office", type: "select", name: "home_office", options: ["Yes", "No"] },
+                { label: "Guest rooms", type: "select", name: "guest_rooms", options: ["Yes", "No"] },
+                { label: "Style and Aesthetics", type: "select", name: "style", options: ["Modern", "Traditional"] },
+                { label: "Garage", type: "select", name: "garage", options: ["Yes", "No"] },
+                { label: "Parking", type: "select", name: "parking", options: ["Yes", "No"] }
+            ],
+            "Apartment buildings": [
+                { label: "Number of floors", type: "number", name: "floors", min: 1, max: 10 },
+                { label: "Gym", type: "select", name: "gym", options: ["Yes", "No"] },
+                { label: "Play Area", type: "select", name: "play_area", options: ["Yes", "No"] },
+                { label: "Style and Aesthetics", type: "select", name: "style", options: ["Modern", "Traditional"] }
+            ]
+        },
+        "Commercial": {
+            "Office Buildings": [
+                { label: "Number of floors", type: "number", name: "floors", min: 1, max: 10 },
+                { label: "Open-Plan Office", type: "select", name: "open_plan", options: ["Yes", "No"] },
+                { label: "Private Office", type: "select", name: "private_office", options: ["Yes", "No"] },
+                { label: "Meeting Rooms", type: "select", name: "meeting_rooms", options: ["Yes", "No"] },
+                { label: "Style and Aesthetics", type: "select", name: "style", options: ["Modern", "Traditional", "High-Tech"] },
+                { label: "Number of Workspaces", type: "number", name: "workspaces", min: 1, max: 10 },
+                { label: "Number of Conference Rooms", type: "number", name: "conference_rooms", min: 1, max: 10 }
+            ],
+            "Shopping malls": [
+                { label: "Number of Units", type: "number", name: "units", min: 1, max: 10 },
+                { label: "Number of Floors", type: "number", name: "floors", min: 1, max: 10 },
+                { label: "Style and Aesthetics", type: "select", name: "style", options: ["Modern", "Traditional"] },
+                { label: "Number of Fire Exits", type: "number", name: "fire_exits", min: 1, max: 10 },
+                { label: "Number of Parking Areas", type: "number", name: "parking_areas", min: 1, max: 10 }
+            ],
+            "Restaurants": [
+                { label: "Seating Capacity", type: "text", name: "seating_capacity" },
+                { label: "Kitchen Size", type: "text", name: "kitchen_size" },
+                { label: "Areas", type: "text", name: "areas" },
+                { label: "Style and Aesthetics", type: "select", name: "style", options: ["Modern", "Traditional"] },
+                { label: "Indoor Seating Area", type: "select", name: "indoor_seating", options: ["Yes", "No"] },
+                { label: "Outdoor Seating Area", type: "select", name: "outdoor_seating", options: ["Yes", "No"] }
+            ]
+        },
+        "Industrial": {
+            "Factories": [
+                { label: "Total Square Footage", type: "text", name: "square_footage" },
+                { label: "Number of Floors", type: "number", name: "floors", min: 1, max: 10 },
+                { label: "Production Lines", type: "number", name: "production_lines", min: 1, max: 10 },
+                { label: "Storage Areas", type: "text", name: "storage_areas" },
+                { label: "Administrative Offices", type: "number", name: "offices", min: 1, max: 10 },
+                { label: "Type of Manufacturing Product", type: "text", name: "product" },
+                { label: "Parking Facilities", type: "select", name: "parking", options: ["Yes", "No"] },
+                { label: "Amenities", type: "text", name: "amenities" }
+            ],
+            "Warehouse": [
+                { label: "Total Square Footage", type: "text", name: "square_footage" },
+                { label: "Number of Levels", type: "number", name: "levels", min: 1, max: 10 },
+                { label: "Storage Requirement - Type", type: "text", name: "storage_type" },
+                { label: "Storage Requirement - Volume", type: "text", name: "storage_volume" },
+                { label: "Storage Requirement - Solution", type: "text", name: "storage_solution" },
+                { label: "Number of Restrooms for Employees", type: "number", name: "restrooms", min: 1, max: 10 },
+                { label: "Parking", type: "select", name: "parking", options: ["Yes", "No"] }
+            ]
+        },
+        "Transport": {
+            "Bus Station": [
+                { label: "Number of Bus Bays", type: "number", name: "bus_bays", min: 1, max: 10 },
+                { label: "Waiting Areas", type: "number", name: "waiting_areas", min: 1, max: 10 },
+                { label: "Daily Passenger Values", type: "text", name: "passenger_values" },
+                { label: "Number of Restrooms", type: "number", name: "restrooms", min: 1, max: 10 },
+                { label: "Number of Shops", type: "number", name: "shops", min: 1, max: 10 },
+                { label: "Number of Food Courts", type: "number", name: "food_courts", min: 1, max: 10 },
+                { label: "Number of Ticket Counters", type: "number", name: "ticket_counters", min: 1, max: 10 }
+            ],
+            "Railway Station": [
+                { label: "Daily Passenger Value", type: "number", name: "daily_passenger", min: 50, max: 500 },
+                { label: "Waiting Areas", type: "number", name: "waiting_areas", min: 1, max: 10 },
+                { label: "Ticket Counters", type: "number", name: "ticket_counters", min: 1, max: 10 }
+            ],
+            "Parking Area": [
+                { label: "Total Area", type: "text", name: "total_area" },
+                { label: "Number of Areas", type: "text", name: "number_of_areas" },
+                { label: "Vehicle Volumes", type: "text", name: "vehicle_volumes" }
+            ]
+        }
+    };
+
+    document.getElementById('building_type').addEventListener('change', function() {
+        const buildingType = this.value;
+        const subcategorySelect = document.getElementById('subcategory');
+        subcategorySelect.innerHTML = '';
+
+        if (buildingType in subcategoryOptions) {
+            for (const subcategory in subcategoryOptions[buildingType]) {
+                const option = document.createElement('option');
+                option.value = subcategory;
+                option.textContent = subcategory;
+                subcategorySelect.appendChild(option);
+            }
+        }
+
+        subcategorySelect.dispatchEvent(new Event('change'));
+    });
+
+    document.getElementById('subcategory').addEventListener('change', function() {
+        const buildingType = document.getElementById('building_type').value;
+        const subcategory = this.value;
+        const dynamicFields = document.getElementById('dynamic_fields');
+        dynamicFields.innerHTML = '';
+
+        if (buildingType in subcategoryOptions && subcategory in subcategoryOptions[buildingType]) {
+            for (const field of subcategoryOptions[buildingType][subcategory]) {
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group';
+
+                const label = document.createElement('label');
+                label.textContent = field.label;
+                formGroup.appendChild(label);
+
+                let input;
+                if (field.type === 'select') {
+                    input = document.createElement('select');
+                    input.name = field.name;
+                    input.className = 'form-control';
+
+                    for (const option of field.options) {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option;
+                        optionElement.textContent = option;
+                        input.appendChild(optionElement);
+                    }
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type;
+                    input.name = field.name;
+                    input.className = 'form-control';
+                    if (field.min) input.min = field.min;
+                    if (field.max) input.max = field.max;
+                }
+
+                formGroup.appendChild(input);
+                dynamicFields.appendChild(formGroup);
+            }
+        }
+    });
+
+    document.getElementById('building_type').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

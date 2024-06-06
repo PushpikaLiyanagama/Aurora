@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<ul class="list-group">
+    {% for law in laws %}
+        <li class="list-group-item">{{ law.title }}: {{ law.description }}</li>
+    {% endfor %}
+</ul>
+<h2 class="mt-4">Maps</h2>
+<div class="row">
+    {% for map in maps %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <img src="{{ url_for('uploaded_file', filename=map.filename) }}" class="card-img-top" alt="{{ map.name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ map.name }}</h5>
+                    <p class="card-text">Filename: {{ map.filename }}</p>
+                    <a href="{{ url_for('mark_area', map_id=map.id) }}" class="btn btn-primary">Mark Area</a>
+                    <a href="{{ url_for('admin_view_map', map_id=map.id) }}" class="btn btn-secondary">View Map</a>
+                    <a href="{{ url_for('view_detected_objects', map_id=map.id) }}" class="btn btn-info">View Detected Objects</a>
+                    <form action="{{ url_for('delete_map', map_id=map.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

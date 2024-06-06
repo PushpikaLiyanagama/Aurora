@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}View Detected Objects - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>Detected Objects in {{ map_info.name }}</h1>
+<img src="{{ url_for('uploaded_file', filename=segmented_image.split('/')[-1]) }}" alt="Segmented Map" style="width: 100%; height: auto;">
+<h2 class="mt-4">Object Details</h2>
+<ul class="list-group">
+    {% for obj in detected_objects %}
+        <li class="list-group-item">
+            <h4>{{ obj.class_name }}</h4>
+            <p>X1: {{ obj.x1 }}, Y1: {{ obj.y1 }}, X2: {{ obj.x2 }}, Y2: {{ obj.y2 }}, Area: {{ obj.area }}</p>
+        </li>
+    {% endfor %}
+</ul>
+<a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+{% endblock %}

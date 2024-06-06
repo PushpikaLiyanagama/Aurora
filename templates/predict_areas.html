@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Predicted Areas</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Predicted Areas</h1>
+        <ul class="list-group">
+            {% for area in predictions %}
+                <li class="list-group-item">{{ area.name }}: {{ area.description }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

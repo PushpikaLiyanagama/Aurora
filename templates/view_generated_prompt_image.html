@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Generated Image - Our City Planner{% endblock %}
+
+{% block content %}
+<h1>Generated Image</h1>
+<img src="{{ url_for('serve_generated_image', filename=image_filename) }}" alt="Generated Image" style="width: 100%; height: auto;">
+<a href="{{ url_for('view_prompts') }}" class="btn btn-secondary mt-4">Back to Prompts</a>
+{% endblock %}
