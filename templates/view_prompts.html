@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>View Prompts</h1>
-<table class="table table-bordered">
+<table class="table">
     <thead>
         <tr>
             <th>Building Type</th>
@@ -12,6 +12,8 @@
             <th>Prompt</th>
             <th>Generate Image</th>
             <th>View Image</th>
+            <th>Generate Image 2</th>
+            <th>View Image 2</th>
         </tr>
     </thead>
     <tbody>
@@ -20,16 +22,29 @@
             <td>{{ prompt.building_type }}</td>
             <td>{{ prompt.subcategory }}</td>
             <td>{{ prompt.prompt }}</td>
-            <td><a href="{{ url_for('generate_image_route', prompt_id=prompt.id) }}" class="btn btn-primary">Create</a></td>
+            <td>
+                <a href="{{ url_for('generate_image_route', prompt_id=prompt.id) }}" class="btn btn-primary">Create</a>
+            </td>
             <td>
                 {% if prompt.generated_image %}
-                <a href="{{ url_for('view_generated_image', image_filename=prompt.generated_image) }}" class="btn btn-secondary">View</a>
+                <a href="{{ url_for('view_image', prompt_id=prompt.id) }}" class="btn btn-info">View</a>
                 {% else %}
-                N/A
+                <span>No image</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('generate_image_2_route', prompt_id=prompt.id) }}" class="btn btn-primary">Create</a>
+            </td>
+            <td>
+                {% if prompt.generated_image_2 %}
+                <a href="{{ url_for('view_image_2', prompt_id=prompt.id) }}" class="btn btn-info">View</a>
+                {% else %}
+                <span>No image</span>
                 {% endif %}
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
 {% endblock %}
