@@ -1,19 +1,19 @@
-from flask import Flask, render_template, redirect, url_for, request, session, flash, send_from_directory,send_file
+from flask import Flask, render_template, redirect, url_for, request, session, flash, send_from_directory, send_file
 from flask_bootstrap import Bootstrap
 import mysql.connector
 import os
 from werkzeug.utils import secure_filename
 import cv2
 import base64
-import random
 import numpy as np
 import requests
-import io
+import random
 import time
 from PIL import Image
+from io import BytesIO
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = 'UrbanAI'
 Bootstrap(app)
 
 UPLOAD_FOLDER = 'static/uploads'
@@ -21,7 +21,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# API for object detection
+# API for segmentation instance
 API_URL = "https://outline.roboflow.com/aurora-seg/1"
 API_KEY = "B045orWaaQ6IYhjERfWi"
 
@@ -29,7 +29,16 @@ API_KEY = "B045orWaaQ6IYhjERfWi"
 GEN_API_URL = "https://api-inference.huggingface.co/models/stablediffusionapi/architecture-tuned-model"
 HEADERS = {"Authorization": "Bearer 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"}
 
-# Database configuration
+# API for generating images with new API backup
+NEW_API_URL = "https://api.limewire.com/api/image/generation"
+NEW_API_KEY = "lmwr_sk_G7XzGcb9VO_802Niu0LIFzjZTUfAGlL26rN5VXXoGHlBnH2U"
+NEW_HEADERS = {
+    "Content-Type": "application/json",
+    "X-Api-Version": "v1",
+    "Accept": "application/json",
+    "Authorization": f"Bearer {NEW_API_KEY}"
+}
+
 db = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -37,6 +46,17 @@ db = mysql.connector.connect(
     database="aurora"
 )
 cursor = db.cursor(dictionary=True)
+
+cursor.execute("SHOW COLUMNS FROM prompts LIKE 'generated_image'")
+result = cursor.fetchone()
+if not result:
+    cursor.execute("ALTER TABLE prompts ADD COLUMN generated_image VARCHAR(255)")
+
+cursor.execute("SHOW COLUMNS FROM prompts LIKE 'generated_image_2'")
+result = cursor.fetchone()
+if not result:
+    cursor.execute("ALTER TABLE prompts ADD COLUMN generated_image_2 VARCHAR(255)")
+db.commit()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -46,8 +66,15 @@ def encode_image_to_base64(image_path):
         encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
     return encoded_string
 
-def query(payload):
-    response = requests.post(f"{API_URL}?api_key={API_KEY}", json=payload)
+def send_image_to_roboflow(api_url, api_key, image_base64):
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    response = requests.post(f"{api_url}?api_key={api_key}", data=image_base64, headers=headers)
+    return response.json()
+
+def query_image(payload):
+    response = requests.post(GEN_API_URL, headers=HEADERS, json=payload)
     try:
         response.raise_for_status()  
     except requests.exceptions.HTTPError as e:
@@ -63,17 +90,16 @@ def generate_image(prompt):
         if response.status_code == 503 and "loading" in response.json().get("error", "").lower():
             estimated_time = response.json().get("estimated_time", 60)
             print(f"Model is loading. Estimated time: {estimated_time} seconds.")
-            time.sleep(min(estimated_time, 60))  # Wait before retrying
+            time.sleep(min(estimated_time, 60))  
         else:
             return response
 
-def query_image(payload):
-    response = requests.post(GEN_API_URL, headers=HEADERS, json=payload)
-    try:
-        response.raise_for_status()  # Raise an exception for HTTP errors
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP error occurred: {e}")
-        print(f"Response content: {response.content}")
+def generate_image_with_new_api(prompt):
+    payload = {
+        "prompt": prompt,
+        "aspect_ratio": "1:1"
+    }
+    response = requests.post(NEW_API_URL, json=payload, headers=NEW_HEADERS)
     return response
 
 def get_unique_color(label):
@@ -94,7 +120,6 @@ def draw_segmentations(image, segmentations):
         
         cv2.fillPoly(overlay, [points], color)
         
-
         M = cv2.moments(points)
         if M["m00"] != 0:
             cX = int(M["m10"] / M["m00"])
@@ -103,8 +128,8 @@ def draw_segmentations(image, segmentations):
             cX, cY = points[0][0], points[0][1]
         
         cv2.putText(image, label, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2, cv2.LINE_AA)
-
-    alpha = 0.4  # Transparency factor
+    
+    alpha = 0.4  
     image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
     return image
 
@@ -134,7 +159,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user_type = 'user'  # Default user type
+        user_type = 'user' 
         cursor.execute('INSERT INTO users (username, password, user_type) VALUES (%s, %s, %s)', (username, password, user_type))
         db.commit()
         return redirect(url_for('login'))
@@ -185,11 +210,11 @@ def upload_map():
                 file.save(file_path)
 
                 image_base64 = encode_image_to_base64(file_path)
-                result = query({"base64": image_base64})
+                result = send_image_to_roboflow(API_URL, API_KEY, image_base64)
 
                 cursor.execute('INSERT INTO maps (name, filename) VALUES (%s, %s)', (map_name, filename))
                 db.commit()
-                map_id = cursor.lastrowid  # Get the last inserted id
+                map_id = cursor.lastrowid 
 
                 if 'predictions' in result:
                     for obj in result['predictions']:
@@ -255,10 +280,14 @@ def admin_view_map(map_id):
 @app.route('/admin/delete_map/<int:map_id>', methods=['POST'])
 def delete_map(map_id):
     if 'user_type' in session and session['user_type'] == 'admin':
+
+        cursor.execute('DELETE FROM prompts WHERE map_id=%s', (map_id,))
+        
         cursor.execute('SELECT filename FROM maps WHERE id=%s', (map_id,))
         map_info = cursor.fetchone()
         if map_info:
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], map_info['filename'])
+            
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
@@ -281,14 +310,15 @@ def view_detected_objects(map_id):
         detected_objects = cursor.fetchall()
         cursor.execute('SELECT * FROM maps WHERE id=%s', (map_id,))
         map_info = cursor.fetchone()
-
+        
         map_image_path = os.path.join(app.config['UPLOAD_FOLDER'], map_info['filename'])
         map_image = cv2.imread(map_image_path)
-
+        
+        
         segmentations = []
         for obj in detected_objects:
             mask = base64.b64decode(obj['mask'])
-            mask = eval(mask.decode())  # Convert the string back to list of points
+            mask = eval(mask.decode())
             segmentations.append({
                 'points': mask,
                 'class': obj['class_name']
@@ -365,11 +395,8 @@ def building_form(map_id, area_id):
             x2 = request.args['x2']
             y2 = request.args['y2']
             
-            prompt_details = []
-            for key, value in request.form.items():
-                if key not in ['building_type', 'subcategory']:
-                    prompt_details.append(f"{key}: {value}")
-            prompt = ", ".join(prompt_details)
+            prompt_details = [f"{key.replace('_', ' ')}: {value}" for key, value in request.form.items() if key not in ['building_type', 'subcategory']]
+            prompt = f"architectural layout plan for {subcategory} {building_type}, It has " + ", ".join(prompt_details)
 
             cursor.execute('INSERT INTO prompts (user_id, map_id, area_id, building_type, subcategory, prompt, x1, y1, x2, y2) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', 
                            (user_id, map_id, area_id, building_type, subcategory, prompt, x1, y1, x2, y2))
@@ -418,36 +445,53 @@ def view_prompts():
 
 @app.route('/generate_image/<int:prompt_id>')
 def generate_image_route(prompt_id):
-    cursor.execute('SELECT prompt FROM prompts WHERE id=%s', (prompt_id,))
+    cursor.execute('SELECT prompt FROM prompts WHERE id = %s', (prompt_id,))
     prompt = cursor.fetchone()
     if prompt:
         response = generate_image(prompt['prompt'])
-        
         if response.status_code == 200 and 'image' in response.headers.get('Content-Type', ''):
             image_bytes = response.content
-            image = Image.open(io.BytesIO(image_bytes))
-            image_filename = f"generated_{prompt_id}.png"
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            image = Image.open(BytesIO(image_bytes))
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], f"generated_image_{prompt_id}.png")
             image.save(image_path)
-            
-            cursor.execute('UPDATE prompts SET generated_image=%s WHERE id=%s', (image_filename, prompt_id))
+            cursor.execute('UPDATE prompts SET generated_image = %s WHERE id = %s', (image_path, prompt_id))
             db.commit()
+    return redirect(url_for('view_prompts'))
 
-            return redirect(url_for('view_generated_image', image_filename=image_filename))
-        else:
-            flash('Failed to generate image.')
-            return redirect(url_for('view_prompts'))
-    else:
-        flash('Invalid prompt ID.')
-        return redirect(url_for('view_prompts'))
+@app.route('/generate_image_2/<int:prompt_id>')
+def generate_image_2_route(prompt_id):
+    cursor.execute('SELECT prompt FROM prompts WHERE id = %s', (prompt_id,))
+    prompt = cursor.fetchone()
+    if prompt:
+        response = generate_image_with_new_api(prompt['prompt'])
+        if response.status_code == 200:
+            data = response.json()
+            image_url = data['data'][0]['asset_url']
+            image_response = requests.get(image_url)
+            if image_response.status_code == 200:
+                image_data = image_response.content
+                image = Image.open(BytesIO(image_data))
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], f"generated_image_2_{prompt_id}.png")
+                image.save(image_path)
+                cursor.execute('UPDATE prompts SET generated_image_2 = %s WHERE id = %s', (image_path, prompt_id))
+                db.commit()
+    return redirect(url_for('view_prompts'))
 
-@app.route('/view_generated_image/<string:image_filename>')
-def view_generated_image(image_filename):
-    return render_template('view_generated_prompt_image.html', image_filename=image_filename)
+@app.route('/view_image/<int:prompt_id>')
+def view_image(prompt_id):
+    cursor.execute('SELECT generated_image FROM prompts WHERE id = %s', (prompt_id,))
+    result = cursor.fetchone()
+    if result and result['generated_image']:
+        return send_file(result['generated_image'], mimetype='image/png')
+    return "No image available", 404
 
-@app.route('/generated_image/<string:filename>')
-def serve_generated_image(filename):
-    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+@app.route('/view_image_2/<int:prompt_id>')
+def view_image_2(prompt_id):
+    cursor.execute('SELECT generated_image_2 FROM prompts WHERE id = %s', (prompt_id,))
+    result = cursor.fetchone()
+    if result and result['generated_image_2']:
+        return send_file(result['generated_image_2'], mimetype='image/png')
+    return "No image available", 404
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
